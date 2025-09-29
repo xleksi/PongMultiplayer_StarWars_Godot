@@ -3,11 +3,9 @@ using System;
 
 public partial class Enemy : RigidBody2D
 {
-    [Export] 
-    public float Speed = 3500f;
+    [Export] public float Speed = 3500f;
 
-    [Export] 
-    public Ball Ball;
+    [Export] public Ball Ball;
 
     public override void _PhysicsProcess(double delta)
     {

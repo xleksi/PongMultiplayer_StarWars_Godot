@@ -7,8 +7,8 @@
 size = Vector2(16.9369, 135.812)
 
 [node name="GeneralGrievous" type="RigidBody2D"]
+gravity_scale = 0.0
 script = ExtResource("1_jvygb")
-Speed = 0.0
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 scale = Vector2(0.175, 0.175)

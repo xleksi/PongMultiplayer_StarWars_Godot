@@ -3,10 +3,8 @@ using System;
 
 public partial class Ball : CharacterBody2D
 {
-    [Export]
-    public float InitialBallSpeed = 20f;
-    [Export] 
-    public float SpeedMultiplier = 1.02f;     //102% faster each hit
+    [Export] public float InitialBallSpeed = 20f;
+    [Export] public float SpeedMultiplier = 1.02f;     //102% faster each hit
 
     public float BallSpeed;
 

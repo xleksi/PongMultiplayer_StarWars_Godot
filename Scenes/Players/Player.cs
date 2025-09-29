@@ -2,8 +2,7 @@ using Godot;
 
 public partial class Player : RigidBody2D
 {
-    [Export]
-    public float Speed = 500f;
+    [Export] public float Speed = 500f;
 
     public override void _PhysicsProcess(double delta)
     {
