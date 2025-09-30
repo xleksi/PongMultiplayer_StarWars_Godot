@@ -91,13 +91,19 @@ public partial class MultiplayerLobby : Control
 
         if (Multiplayer.IsServer() && senderId != 0)
         {
-            foreach (var key in GameManager.Players.Keys)
+            foreach (object rawKey in GameManager.Players.Keys)
             {
-                long targetPeerId = Convert.ToInt64(key);
+                long targetPeerId;
                 
-                if (targetPeerId == Multiplayer.GetUniqueId())
-                    continue;
-                if (targetPeerId == senderId)
+                if (rawKey is long l) targetPeerId = l;
+                else if (rawKey is int i) targetPeerId = i;
+                else
+                {
+                    if (!long.TryParse(rawKey?.ToString() ?? "", out targetPeerId))
+                        continue;
+                }
+                
+                if (targetPeerId == Multiplayer.GetUniqueId() || targetPeerId == senderId)
                     continue;
 
                 RpcId(targetPeerId, nameof(SendPlayerInfo), name, id);

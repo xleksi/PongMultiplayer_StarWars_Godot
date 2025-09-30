@@ -1,10 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://chm66hqkis7u4"]
+[gd_scene load_steps=5 format=3 uid="uid://chm66hqkis7u4"]
 
 [ext_resource type="Script" uid="uid://dmd556vu2a5pw" path="res://Scenes/Players/Player.cs" id="1_kkya6"]
 [ext_resource type="Texture2D" uid="uid://doy8plusqhtqn" path="res://Assets/yoda2.png" id="2_kkya6"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kkya6"]
 size = Vector2(15.5697, 236.471)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_kkya6"]
+properties/0/path = NodePath(".:GoalVelocity")
+properties/0/spawn = true
+properties/0/replication_mode = 1
 
 [node name="Yoda" type="RigidBody2D"]
 gravity_scale = 0.0
@@ -19,3 +24,6 @@ texture = ExtResource("2_kkya6")
 position = Vector2(39.6638, -1.98854)
 rotation = 0.0698132
 shape = SubResource("RectangleShape2D_kkya6")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_kkya6")

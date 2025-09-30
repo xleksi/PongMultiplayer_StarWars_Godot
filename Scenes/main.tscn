@@ -179,14 +179,6 @@ scale = Vector2(0.25, 0.25)
 [node name="Camera2D" type="Camera2D" parent="."]
 zoom = Vector2(0.4, 0.4)
 
-[node name="Yoda" parent="." instance=ExtResource("2_bo1nx")]
-position = Vector2(-1100, 0)
-
-[node name="GeneralGrievous" parent="." node_paths=PackedStringArray("Ball") instance=ExtResource("3_8gbba")]
-position = Vector2(1100, 0)
-Speed = 70000.0
-Ball = NodePath("../Ball")
-
 [node name="Ball" parent="." instance=ExtResource("5_kry3j")]
 position = Vector2(0, 2)
 
@@ -213,6 +205,20 @@ volume_db = -5.0
 [node name="AudioGeneralGrievous" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("10_d1ilt")
 volume_db = -5.0
+
+[node name="SpawnPositions" type="Node2D" parent="."]
+
+[node name="0" type="Node2D" parent="SpawnPositions" groups=["PlayerSpawn"]]
+position = Vector2(-1100, 0)
+
+[node name="1" type="Node2D" parent="SpawnPositions" groups=["PlayerSpawn"]]
+position = Vector2(1100, 0)
+
+[node name="GeneralGrievous" parent="." instance=ExtResource("3_8gbba")]
+position = Vector2(1100, 0)
+
+[node name="Yoda" parent="." instance=ExtResource("2_bo1nx")]
+position = Vector2(-1100, 0)
 
 [connection signal="PointScored" from="LeftEdge" to="." method="OnEnemyScored"]
 [connection signal="PointScored" from="RightEdge" to="." method="OnPlayerScored"]

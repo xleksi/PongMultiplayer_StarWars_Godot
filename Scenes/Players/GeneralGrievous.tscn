@@ -1,10 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://cxiygpv0ds51m"]
+[gd_scene load_steps=5 format=3 uid="uid://cxiygpv0ds51m"]
 
-[ext_resource type="Script" uid="uid://h00dy43ontay" path="res://Scenes/Players/Enemy.cs" id="1_jvygb"]
+[ext_resource type="Script" uid="uid://dmd556vu2a5pw" path="res://Scenes/Players/Player.cs" id="1_jvygb"]
 [ext_resource type="Texture2D" uid="uid://bl46dtp7ifnxs" path="res://Assets/general grievous.png" id="2_jvygb"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kkya6"]
 size = Vector2(16.9369, 135.812)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_jvygb"]
+properties/0/path = NodePath(".:GoalVelocity")
+properties/0/spawn = true
+properties/0/replication_mode = 1
 
 [node name="GeneralGrievous" type="RigidBody2D"]
 gravity_scale = 0.0
@@ -24,3 +29,6 @@ shape = SubResource("RectangleShape2D_kkya6")
 position = Vector2(-175, -40)
 rotation = 0.359337
 shape = SubResource("RectangleShape2D_kkya6")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_jvygb")

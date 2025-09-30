@@ -5,14 +5,13 @@ using Godot.Collections;
 public partial class GameManager : Node
 {
     public static readonly Dictionary Players = new Dictionary();
+    
 
     public static void AddPlayer(long id, string name)
     {
         if (!Players.ContainsKey(id))
         {
-            Players[id] = new Dictionary {
-                {"name", name},
-                { "id", id } };
+            Players[id.ToString()] = new Dictionary { { "name", name }, { "id", id } };
         }
     }
 
