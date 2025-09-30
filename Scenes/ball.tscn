@@ -1,10 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://dko7bc1qk755f"]
+[gd_scene load_steps=5 format=3 uid="uid://dko7bc1qk755f"]
 
 [ext_resource type="Script" uid="uid://blqwkvfo78o1m" path="res://Scenes/Ball.cs" id="1_41u45"]
 [ext_resource type="Texture2D" uid="uid://b3itjqnkkqxyk" path="res://Assets/ball.png" id="1_x8fbi"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_x8fbi"]
 size = Vector2(32, 32)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_ij5cq"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
 
 [node name="Ball" type="CharacterBody2D"]
 script = ExtResource("1_41u45")
@@ -14,3 +19,6 @@ texture = ExtResource("1_x8fbi")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_x8fbi")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_ij5cq")

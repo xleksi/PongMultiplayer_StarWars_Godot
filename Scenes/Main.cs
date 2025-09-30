@@ -76,6 +76,6 @@ public partial class Main : Node2D
     {
         ball.Position = Vector2.Zero;
         ball.Velocity = Vector2.Zero;
-        ball.StartBall();
+        ball.ResetBall();
     }
 }
