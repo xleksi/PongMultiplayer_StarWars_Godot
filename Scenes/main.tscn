@@ -182,10 +182,10 @@ zoom = Vector2(0.4, 0.4)
 [node name="Yoda" parent="." instance=ExtResource("2_bo1nx")]
 position = Vector2(-1100, 0)
 
-[node name="GeneralGrievous" parent="." instance=ExtResource("3_8gbba")]
+[node name="GeneralGrievous" parent="." node_paths=PackedStringArray("Ball") instance=ExtResource("3_8gbba")]
 position = Vector2(1100, 0)
-gravity_scale = 0.0
-lock_rotation = true
+Speed = 70000.0
+Ball = NodePath("../Ball")
 
 [node name="Ball" parent="." instance=ExtResource("5_kry3j")]
 position = Vector2(0, 2)
