@@ -1,21 +1,34 @@
 using Godot;
-using System;
-using Godot.Collections;
+using System.Collections.Generic;
 
-public partial class GameManager : Node
+public static class GameManager
 {
-    public static readonly Dictionary Players = new Dictionary();
-    
+    // Strongly typed dictionary:
+    // Key = player id (long), value = player info (name + id in Variant dict)
+    public static Dictionary<long, Godot.Collections.Dictionary<string, Variant>> Players { get; private set; }
+        = new();
+
+    public static bool HasPlayer(long id)
+    {
+        return Players.ContainsKey(id);
+    }
 
     public static void AddPlayer(long id, string name)
     {
         if (!Players.ContainsKey(id))
         {
-            Players[id.ToString()] = new Dictionary { { "name", name }, { "id", id } };
+            var playerData = new Godot.Collections.Dictionary<string, Variant>
+            {
+                ["id"] = id,
+                ["name"] = name
+            };
+            Players[id] = playerData;
         }
     }
 
-    public static bool HasPlayer(long id) => Players.ContainsKey(id);
-
-    public static Dictionary GetPlayerDict(long id) => Players.ContainsKey(id) ? (Dictionary)Players[id] : null;
+    public static void RemovePlayer(long id)
+    {
+        if (Players.ContainsKey(id))
+            Players.Remove(id);
+    }
 }
