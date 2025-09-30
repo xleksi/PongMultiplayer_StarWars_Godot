@@ -1,4 +1,5 @@
 using Godot;
+using System;
 
 public partial class MultiplayerLobby : Control
 {
@@ -33,74 +34,105 @@ public partial class MultiplayerLobby : Control
 
     private void OnHostButtonPressed()
     {
+        if (Multiplayer.MultiplayerPeer != null)
+            Multiplayer.MultiplayerPeer.Close();
+
         peer = new ENetMultiplayerPeer();
         var error = peer.CreateServer(Port, MAX_PLAYERS);
 
         if (error != Error.Ok)
         {
-            GD.Print($"Cannot host: {error} ({(int)error})");
+            GD.PrintErr($"Cannot host: {error} ({(int)error})");
             return;
         }
 
         peer.Host?.Compress(ENetConnection.CompressionMode.RangeCoder);
         Multiplayer.MultiplayerPeer = peer;
 
-        GD.Print("WAITING FOR OTHER PLAYER!");
-        SendPlayerInfo(lineEdit.Text, Multiplayer.GetUniqueId());
+        var name = string.IsNullOrWhiteSpace(lineEdit.Text) ? $"Player{Multiplayer.GetUniqueId()}" : lineEdit.Text;
+        if (!GameManager.HasPlayer(Multiplayer.GetUniqueId()))
+            GameManager.AddPlayer(Multiplayer.GetUniqueId(), name);
+
+        GD.Print("Server started — waiting for other players...");
     }
 
     private void OnJoinButtonPressed()
     {
+        if (Multiplayer.MultiplayerPeer != null)
+            Multiplayer.MultiplayerPeer.Close();
+
         peer = new ENetMultiplayerPeer();
-        peer.CreateClient(Address, Port);
+        var error = peer.CreateClient(Address, Port);
+        if (error != Error.Ok)
+        {
+            GD.PrintErr($"Cannot create client: {error} ({(int)error})");
+            return;
+        }
+
         peer.Host?.Compress(ENetConnection.CompressionMode.RangeCoder);
         Multiplayer.MultiplayerPeer = peer;
     }
 
     private void OnStartServerButtonPressed()
     {
-        Rpc(nameof(StartGame));
+        if (Multiplayer.IsServer())
+            Rpc(nameof(StartGame));
+        else
+            GD.Print("Only host can start the game.");
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
     private void StartGame()
     {
+        if (Multiplayer.MultiplayerPeer == null)
+        {
+            GD.PrintErr("StartGame called but multiplayer peer is not active yet.");
+            return;
+        }
+
         var packed = GD.Load<PackedScene>("res://Scenes/main.tscn");
         var scene = packed.Instantiate();
         GetTree().Root.AddChild(scene);
         Hide();
     }
 
-    private void OnPeerConnected(long id) => GD.Print($"Player connected: {id}");
-    private void OnPeerDisconnected(long id) => GD.Print($"Player disconnected: {id}");
+    private void OnPeerConnected(long id) => GD.Print($"[Lobby] Player connected: {id}");
+    private void OnPeerDisconnected(long id) => GD.Print($"[Lobby] Player disconnected: {id}");
 
     private void OnConnectedToServer()
     {
-        GD.Print("Connected to server!");
-        RpcId(1, nameof(SendPlayerInfo), lineEdit.Text, Multiplayer.GetUniqueId());
+        GD.Print("[Lobby] Connected to server!");
+        var name = string.IsNullOrWhiteSpace(lineEdit.Text) ? $"Player{Multiplayer.GetUniqueId()}" : lineEdit.Text;
+        RpcId(1, nameof(SendPlayerInfo), name, Multiplayer.GetUniqueId());
     }
 
-    private void OnConnectionFailed() => GD.Print("Connection failed!");
+    private void OnConnectionFailed() => GD.PrintErr("[Lobby] Connection failed!");
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer)]
     public void SendPlayerInfo(string name, long id)
     {
-        if (Multiplayer.IsServer())
-        {
-            if (!GameManager.HasPlayer(id))
-                GameManager.AddPlayer(id, name);
-
-            foreach (var kvp in GameManager.Players)
-            {
-                var d = kvp.Value;
-                long pid = d["id"].AsInt64();
-                string pname = d["name"].AsString();
-                Rpc(nameof(ReceivePlayerEntry), pname, pid);
-            }
-        }
-        else
+        if (!Multiplayer.IsServer())
         {
             RpcId(1, nameof(SendPlayerInfo), name, id);
+            return;
+        }
+
+        GD.Print($"[Lobby][Server] Registering player {name} ({id})");
+        if (!GameManager.HasPlayer(id))
+            GameManager.AddPlayer(id, name);
+
+        foreach (var kvp in GameManager.Instance.Players)
+        {
+            var d = kvp.Value;
+            long pid = d["id"].AsInt64();
+            string pname = d["name"].AsString();
+            Rpc(nameof(ReceivePlayerEntry), pname, pid);
+        }
+
+        if (GameManager.Instance.Players.Count >= MAX_PLAYERS)
+        {
+            GD.Print("[Lobby][Server] Max players reached — starting game.");
+            Rpc(nameof(StartGame));
         }
     }
 

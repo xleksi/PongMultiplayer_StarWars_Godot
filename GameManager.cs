@@ -1,34 +1,49 @@
 using Godot;
 using System.Collections.Generic;
 
-public static class GameManager
+
+public partial class GameManager : Node
 {
-    // Strongly typed dictionary:
-    // Key = player id (long), value = player info (name + id in Variant dict)
-    public static Dictionary<long, Godot.Collections.Dictionary<string, Variant>> Players { get; private set; }
+    public static GameManager Instance { get; private set; }
+
+    // Key = peer id (long), Value = player data dictionary {"id": long, "name": string}
+    public Dictionary<long, Godot.Collections.Dictionary<string, Variant>> Players { get; private set; }
         = new();
+
+    public override void _EnterTree()
+    {
+        Instance = this;
+    }
+
+    public override void _ExitTree()
+    {
+        if (Instance == this) Instance = null;
+        Players.Clear();
+    }
 
     public static bool HasPlayer(long id)
     {
-        return Players.ContainsKey(id);
+        return Instance != null && Instance.Players.ContainsKey(id);
     }
 
     public static void AddPlayer(long id, string name)
     {
-        if (!Players.ContainsKey(id))
+        if (Instance == null) return;
+        if (!Instance.Players.ContainsKey(id))
         {
             var playerData = new Godot.Collections.Dictionary<string, Variant>
             {
                 ["id"] = id,
                 ["name"] = name
             };
-            Players[id] = playerData;
+            Instance.Players[id] = playerData;
         }
     }
 
     public static void RemovePlayer(long id)
     {
-        if (Players.ContainsKey(id))
-            Players.Remove(id);
+        if (Instance == null) return;
+        if (Instance.Players.ContainsKey(id))
+            Instance.Players.Remove(id);
     }
 }

@@ -11,14 +11,15 @@ public partial class Ball : CharacterBody2D
     public override void _Ready()
     {
         BallSpeed = InitialBallSpeed;
-        // StartBall should be triggered by the authority only
         if (IsMultiplayerAuthority())
             StartBall();
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        // If not authoritative, just follow synced velocity
+        if (Multiplayer.MultiplayerPeer == null)
+            return;
+        
         if (!IsMultiplayerAuthority())
         {
             Velocity = GoalVelocity;
@@ -28,10 +29,7 @@ public partial class Ball : CharacterBody2D
         var collision = MoveAndCollide(Velocity * BallSpeed * (float)delta);
 
         if (collision != null)
-        {
-            // notify others about bounce
             Rpc(nameof(Bounce), collision.GetNormal());
-        }
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
@@ -52,7 +50,6 @@ public partial class Ball : CharacterBody2D
             ySign * InitialBallSpeed
         );
 
-        // owner sets and tells everyone to start
         Rpc(nameof(StartBallRpc), start);
     }
 

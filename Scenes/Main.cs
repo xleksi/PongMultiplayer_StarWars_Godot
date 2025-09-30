@@ -20,15 +20,21 @@ public partial class Main : Node2D
         YodaAudio = GetNode<AudioStreamPlayer>("AudioYoda");
         GeneralGrievousAudio = GetNode<AudioStreamPlayer>("AudioGeneralGrievous");
 
-        GD.Print("GameManager.Players contents: " + GameManager.Players);
+        GD.Print("GameManager.Players contents: " + GameManager.Instance.Players);
 
         int index = 0;
-        foreach (var kvp in GameManager.Players)
+        foreach (var kvp in GameManager.Instance.Players)
         {
             long id = kvp.Key;
             var playerDict = kvp.Value;
 
-            // Assign Yoda to first player, Grievous to second
+            if (GetNodeOrNull<Node>($"/root/Main/{id}") != null || GetNodeOrNull<Node>($"{id}") != null)
+            {
+                GD.Print($"Player node for id {id} already exists locally — skipping spawn.");
+                index++;
+                continue;
+            }
+
             Node2D currentPlayer = (index == 0)
                 ? (Node2D)YodaScene.Instantiate()
                 : (Node2D)GeneralGrievousScene.Instantiate();
@@ -45,6 +51,7 @@ public partial class Main : Node2D
                 }
             }
 
+            GD.Print($"Spawned player node '{currentPlayer.Name}' at index {index} (local peer id {Multiplayer.GetUniqueId()})");
             index++;
         }
     }
@@ -53,7 +60,6 @@ public partial class Main : Node2D
     {
         EnemyPoints += 1;
         ui.UpdateEnemyPoints(EnemyPoints);
-        GD.Print(EnemyPoints);
         ResetGameState();
         GeneralGrievousAudio.Play();
     }
@@ -62,7 +68,6 @@ public partial class Main : Node2D
     {
         PlayerPoints += 1;
         ui.UpdatePlayerPoints(PlayerPoints);
-        GD.Print(PlayerPoints);
         ResetGameState();
         YodaAudio.Play();
     }
