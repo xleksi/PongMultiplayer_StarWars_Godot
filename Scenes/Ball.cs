@@ -46,13 +46,11 @@ public partial class Ball : CharacterBody2D
 
         if (!IsMultiplayerAuthority())
         {
-            // Just follow server values
             Velocity = GoalVelocity;
             MoveAndCollide(Velocity * BallSpeed * (float)delta);
             return;
         }
 
-        // Authority moves the ball
         var collision = MoveAndCollide(Velocity * BallSpeed * (float)delta);
 
         if (collision != null)
@@ -60,11 +58,10 @@ public partial class Ball : CharacterBody2D
             Velocity = Velocity.Bounce(collision.GetNormal()) * SpeedMultiplier;
             GoalVelocity = Velocity;
 
-            bool flipNow = lastFlip; // default = keep previous value
+            bool flipNow = lastFlip;
             var colliderObj = collision.GetCollider();
             if (colliderObj is Node colliderNode)
             {
-                // Flip only if collider is paddle
                 if (colliderNode.IsInGroup("Yoda"))
                     flipNow = true;
                 else if (colliderNode.IsInGroup("GeneralGrievous"))
@@ -77,7 +74,6 @@ public partial class Ball : CharacterBody2D
                 lastFlip = flipNow;
             }
 
-            // Sync after collision
             Rpc(nameof(SyncState), GlobalPosition, Velocity, lastFlip);
         }
         else
