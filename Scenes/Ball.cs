@@ -1,24 +1,29 @@
 using Godot;
 using System;
+using System.Linq;
 
 public partial class Ball : CharacterBody2D
 {
     [Export] public float InitialBallSpeed = 20f;
-    [Export] public float SpeedMultiplier = 1.02f; // 102% each hit
+    [Export] public float SpeedMultiplier = 1.02f; // 102% speed increase per hit
 
-    // How often the server (authority) sends state to clients
     private float syncInterval = 0.05f; // 50 ms
     private float syncTimer = 0f;
 
     public float BallSpeed;
+    private Sprite2D? ballSprite;
+    private bool lastFlip = false;
 
-    // Local "goal" velocity used by clients to apply motion when not authority
     [Export] public Vector2 GoalVelocity { get; set; } = Vector2.Zero;
 
     public override void _Ready()
     {
         BallSpeed = InitialBallSpeed;
-        // Defer init until multiplayer peer exists to avoid "not active" errors
+
+        ballSprite = GetNodeOrNull<Sprite2D>("Sprite2D")
+                     ?? GetNodeOrNull<Sprite2D>("Sprite")
+                     ?? GetChildren().OfType<Sprite2D>().FirstOrDefault();
+
         CallDeferred(nameof(DeferredInit));
     }
 
@@ -26,61 +31,67 @@ public partial class Ball : CharacterBody2D
     {
         if (Multiplayer.MultiplayerPeer == null)
         {
-            // try again later
             CallDeferred(nameof(DeferredInit));
             return;
         }
 
-        // Only the authority (server) should generate/start the ball
         if (IsMultiplayerAuthority())
             ResetBall();
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        // Wait until multiplayer is initialized
         if (Multiplayer.MultiplayerPeer == null)
             return;
 
-        // Non-authority clients: we don't simulate collisions locally.
-        // We follow the last known GoalVelocity (or the last SyncState)
         if (!IsMultiplayerAuthority())
         {
-            // Keep CharacterBody2D.Velocity in sync with GoalVelocity for local engine movement
+            // Just follow server values
             Velocity = GoalVelocity;
-            // Optionally move locally for visuals. We do not run collision logic here.
             MoveAndCollide(Velocity * BallSpeed * (float)delta);
             return;
         }
 
-        // Authority (server) simulates physics
-        // Move the ball according to current Velocity
+        // Authority moves the ball
         var collision = MoveAndCollide(Velocity * BallSpeed * (float)delta);
 
         if (collision != null)
         {
-            // Bounce and speed up
             Velocity = Velocity.Bounce(collision.GetNormal()) * SpeedMultiplier;
             GoalVelocity = Velocity;
 
-            // Immediately inform clients about bounce via unreliable sync
-            Rpc(nameof(SyncState), GlobalPosition, Velocity);
+            bool flipNow = lastFlip; // default = keep previous value
+            var colliderObj = collision.GetCollider();
+            if (colliderObj is Node colliderNode)
+            {
+                // Flip only if collider is paddle
+                if (colliderNode.IsInGroup("Yoda"))
+                    flipNow = true;
+                else if (colliderNode.IsInGroup("GeneralGrievous"))
+                    flipNow = false;
+            }
+
+            if (ballSprite != null)
+            {
+                ballSprite.FlipH = flipNow;
+                lastFlip = flipNow;
+            }
+
+            // Sync after collision
+            Rpc(nameof(SyncState), GlobalPosition, Velocity, lastFlip);
         }
         else
         {
-            // No collision this frame — update goal velocity so clients can use it
             GoalVelocity = Velocity;
-            // Periodic sync to keep clients in sync (even if no collision)
             syncTimer += (float)delta;
             if (syncTimer >= syncInterval)
             {
                 syncTimer = 0f;
-                Rpc(nameof(SyncState), GlobalPosition, Velocity);
+                Rpc(nameof(SyncState), GlobalPosition, Velocity, lastFlip);
             }
         }
     }
 
-    // Authority calls this to pick the random starting velocity and tell everyone
     public void ResetBall()
     {
         if (!IsMultiplayerAuthority())
@@ -100,13 +111,10 @@ public partial class Ball : CharacterBody2D
         GoalVelocity = start;
         GlobalPosition = Vector2.Zero;
 
-        // Inform everyone (including us because CallLocal = true) about the start
         Rpc(nameof(StartBallRpc), start);
-        // Also do an immediate unreliable state sync so clients get pos+velocity fast:
-        Rpc(nameof(SyncState), GlobalPosition, Velocity);
+        Rpc(nameof(SyncState), GlobalPosition, Velocity, lastFlip);
     }
 
-    // Called on all peers (CallLocal = true) to set initial state
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
     public void StartBallRpc(Vector2 startVelocity)
     {
@@ -116,16 +124,31 @@ public partial class Ball : CharacterBody2D
         BallSpeed = InitialBallSpeed;
     }
 
-    // Unreliable frequent sync that authority uses to update clients
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    public void SyncState(Vector2 pos, Vector2 velocity)
+    public void SyncState(Vector2 pos, Vector2 velocity, bool flipH)
     {
         GlobalPosition = pos;
         Velocity = velocity;
         GoalVelocity = velocity;
+
+        if (ballSprite != null)
+        {
+            ballSprite.FlipH = flipH;
+            lastFlip = flipH;
+        }
+        else
+        {
+            ballSprite = GetNodeOrNull<Sprite2D>("Sprite2D")
+                         ?? GetNodeOrNull<Sprite2D>("Sprite")
+                         ?? GetChildren().OfType<Sprite2D>().FirstOrDefault();
+            if (ballSprite != null)
+            {
+                ballSprite.FlipH = flipH;
+                lastFlip = flipH;
+            }
+        }
     }
 
-    // Optional: helper that authority can call externally (e.g., when a point is scored)
     public void RestartFromServer()
     {
         if (IsMultiplayerAuthority())

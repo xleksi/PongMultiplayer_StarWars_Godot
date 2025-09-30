@@ -23,6 +23,11 @@ GameManager="*res://GameManager.cs"
 
 project/assembly_name="PongMultiplayerGodot"
 
+[global_group]
+
+Yoda=""
+GeneralGrievous=""
+
 [input]
 
 move_up={
